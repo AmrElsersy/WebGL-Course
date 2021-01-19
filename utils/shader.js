@@ -44,7 +44,7 @@ export function createShaderAndCompile(gl, code, type)
     if (isCompiled)
         return shader;
 
-    console.log("not ray2")
+    console.log("shader create is not ray2")
         
     // delete if not success
     console.log(gl.getShaderInfoLog(shader));
