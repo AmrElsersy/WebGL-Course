@@ -111,7 +111,7 @@ function start()
 
     var angle = 0;
     var n_cubes = 3;
-
+    var time = 0;
 
     // ================ Instancing to create many Cube ==================
     for (var i =0; i< n_cubes; i++)
@@ -122,6 +122,7 @@ function start()
         gl.uniform3fv(offsetLocation, offsetArray[i]);
         gl.uniform4fv(colorLocation, colorArray[i]);           
     }
+    var timeLocation = gl.getUniformLocation(cube.program, "time");
     // Loop
     requestAnimationFrame(renderLoop);
 
@@ -131,16 +132,17 @@ function start()
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
 
+        gl.useProgram(cube.program);
+        gl.bindVertexArray(cube.vao);
+
+        time += 0.05;
+        gl.uniform1f(timeLocation, time);
 
         mat4.identity(cube.modelMatrix);
         mat4.rotateX(cube.modelMatrix, cube.modelMatrix, 0.3);
         mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angle);
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix);
-
-        gl.useProgram(cube.program);
-        gl.bindVertexArray(cube.vao);
-
         // draw 4 cubes with a 1 configration but different modification of offsets & colors 
         gl.drawArraysInstanced(gl.TRIANGLES, 0, 36, 3);
 
