@@ -17,8 +17,9 @@ export function createProgram(gl, shaders)
     var isLinked = gl.getProgramParameter(program, gl.LINK_STATUS);
     if (isLinked)
         return program;
-    
+
     // print error & delete program
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
+
 }
