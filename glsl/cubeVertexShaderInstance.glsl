@@ -13,7 +13,11 @@ uniform vec4 colorArray[3];
 
 void main()
 {
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position + offsetArray[gl_InstanceID] , 1.0);
+    mat4 instanceModelMatrix = modelMatrix;
+    // colomn 3 (not raw !) is the translational component
+    // modify it according to each instance
+    instanceModelMatrix[3] = vec4(offsetArray[gl_InstanceID], 1);
+    gl_Position = projectionMatrix * viewMatrix * instanceModelMatrix * vec4(position , 1.0);
     fcolor = inputColor;
     fcolor = colorArray[gl_InstanceID];
 }

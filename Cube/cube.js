@@ -103,7 +103,7 @@ function start()
 
     for (var i = 0; i < 5 ; i++)
     {
-        var offset = vec3.fromValues(0,0,-5);
+        var offset = vec3.fromValues(i-1+i/2,0,-7);
         var color = vec4.fromValues(i===0, i===1, i===2, 1.0);
         offsetArray.push(offset);
         colorArray.push(color);
@@ -111,6 +111,17 @@ function start()
 
     var angle = 0;
     var n_cubes = 3;
+
+
+    // ================ Instancing to create many Cube ==================
+    for (var i =0; i< n_cubes; i++)
+    {
+        var offsetLocation = gl.getUniformLocation(cube.program, "offsetArray["+i.toString()+"]");
+        var colorLocation = gl.getUniformLocation(cube.program, "colorArray["+i.toString()+"]");
+
+        gl.uniform3fv(offsetLocation, offsetArray[i]);
+        gl.uniform4fv(colorLocation, colorArray[i]);           
+    }
     // Loop
     requestAnimationFrame(renderLoop);
 
@@ -121,19 +132,9 @@ function start()
         gl.enable(gl.DEPTH_TEST);
 
 
-        // ================ Instancing to create many Cube ==================
-        for (var i =0; i< n_cubes; i++)
-        {
-            var offsetLocation = gl.getUniformLocation(cube.program, "offsetArray["+i.toString()+"]");
-            var colorLocation = gl.getUniformLocation(cube.program, "colorArray["+i.toString()+"]");
-
-            gl.uniform3fv(offsetLocation, offsetArray[i]);
-            gl.uniform4fv(colorLocation, colorArray[i]);           
-        }
-
         mat4.identity(cube.modelMatrix);
-        // mat4.rotateX(cube.modelMatrix, cube.modelMatrix, 0.3);
-        // mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angle);
+        mat4.rotateX(cube.modelMatrix, cube.modelMatrix, 0.3);
+        mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angle);
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix);
 
