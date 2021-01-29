@@ -20,9 +20,9 @@ void main()
     instanceModelMatrix[3] = vec4(offsetArray[gl_InstanceID], 1);
     gl_Position = projectionMatrix * viewMatrix * instanceModelMatrix * vec4(position , 1.0);
     fcolor = inputColor;
-    fcolor = vec4(colorArray[gl_InstanceID].x * sin(time),
+    fcolor = vec4(colorArray[gl_InstanceID].x,
                   colorArray[gl_InstanceID].y * cos(time),
-                  colorArray[gl_InstanceID].z * sin(2.0*time),
+                  colorArray[gl_InstanceID].z,
                   1) ;
 }
 
