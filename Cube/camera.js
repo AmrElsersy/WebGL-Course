@@ -80,8 +80,10 @@ var dPress = false;
 var sPress = false;
 var zPress = false;
 var xPress = false;
-var rPress = false;
-var qPress = false;
+var leftPress = false;
+var rightPress = false;
+var upPress = false;
+var downPress = false;
 
 
 function start()
@@ -112,6 +114,7 @@ function start()
     var n_cubes = 3;
     var time = 0;
     var movement = 0.1;
+    var rotation = 0.03;
 
     for (var i = 0; i < 5 ; i++)
     {
@@ -129,31 +132,91 @@ function start()
         gl.uniform4fv(colorLocation, colorArray[i]);           
     }
 
-    // Camera Object
+    // ################## Camera Object #######################
     var camera = {
         position: vec3.fromValues(0,0,0),
         target: vec3.fromValues(0,0,0),
+        
         direction: vec3.fromValues(0,0,-1),  // inside the screen (like original camera) 
-        up: vec3.fromValues(0, 1, 0)   // default up vector ... in +ve y direction (defau lt up)
+        up: vec3.fromValues(0, 1, 0),   // default up vector ... in +ve y direction (will be computed again in look_at)
+        right: vec3.fromValues(0,0,0), // 3rd perpendicular vector of direction & up (used to move right & left)
+
+        yaw: - Math.PI/2,
+        pitch: 0,
+
+        updateTarget: function() {
+            // target = position + direction
+            vec3.add(camera.target, camera.position, camera.direction);
+        }
     }
 
-    // target = position + direction
-    vec3.add(camera.target, camera.position, camera.direction);
+    function translateCamera()
+    {
+        // camera right vector direction always in the xz plane(ground) because we don't have roll
+        // instead of computing it by cross product of direction & up vectors
+        // we compute it by projection equations as a function of yaw only 
+        camera.right = vec3.fromValues(
+            -1 * Math.sin(camera.yaw), // cos(yaw + 90)
+            0, // ground plane
+            Math.cos(camera.yaw) // sin(yaw + 90)
+        );
+
+        function cross(a, b) {
+            return vec3.fromValues(
+                    a[1] * b[2] - a[2] * b[1],
+                    a[2] * b[0] - a[0] * b[2],
+                    a[0] * b[1] - a[1] * b[0]
+                    );
+          }
+          
+        camera.up = cross(camera.right, camera.direction);
+
+        // scale to slow down
+        var scaledDirection = vec3.create();
+        var scaledRight = vec3.create();
+        var scaledUp = vec3.create();
+
+        vec3.scale(scaledDirection, camera.direction, 0.1)
+        vec3.scale(scaledRight, camera.right, 0.1)
+        vec3.scale(scaledUp, camera.up, 0.1)
+
+        if (wPress)
+            vec3.add(camera.position, camera.position, scaledDirection);
+        if (sPress)
+            vec3.subtract(camera.position, camera.position, scaledDirection);
+
+        if (aPress)
+            vec3.subtract(camera.position, camera.position, scaledRight);
+        if (dPress)
+            vec3.add(camera.position, camera.position, scaledRight);
+
+
+        if (xPress)
+            vec3.add(camera.position, camera.position, scaledUp);
+        if (zPress)
+            vec3.subtract(camera.position, camera.position, scaledUp);
+    }
 
     function rotateCamera()
     {
-        if (wPress)
-            camera.position[2] -= movement;
-        if (sPress)
-            camera.position[2] += movement;
-        if (aPress)
-            camera.position[0] -= movement;
-        if (dPress)
-            camera.position[0] += movement;
-        if (xPress)
-            camera.position[1] += movement;
-        if (zPress)
-            camera.position[1] -= movement;
+        if (leftPress)
+            camera.yaw -= rotation;
+        if (rightPress)
+            camera.yaw += rotation;
+        if (upPress)
+            camera.pitch += rotation;
+        if (downPress)
+            camera.pitch -= rotation;
+
+        // compute new direction coordinates x,y,z based on yaw & pitch
+        camera.direction[0] = Math.cos(camera.pitch) * Math.cos(camera.yaw);
+        camera.direction[1] = Math.sin(camera.pitch);
+        camera.direction[2] = Math.cos(camera.pitch) * Math.sin(camera.yaw);
+
+        // try to rotate it using glMatrix but couldn't success yet
+        // var yawRotationMatrix = mat4.create()
+        // mat4.rotateY(yawRotationMatrix, yawRotationMatrix, camera.yaw);
+        // var newDirection =  vec4.fromValues(camera.direction[0], camera.direction[1],camera.direction[2], 1)
     }
 
 
@@ -166,15 +229,22 @@ function start()
         gl.useProgram(cube.program);
         gl.bindVertexArray(cube.vao);
 
-        time += 0.05;
-        gl.uniform1f(timeLocation, time);
+        // time += 0.05;
+        // gl.uniform1f(timeLocation, time);
 
         // =============== Camera Matrix ==================
         rotateCamera();
-        vec3.add(camera.target, camera.position, camera.direction);
-        mat4.lookAt(viewMatrix, camera.position, camera.target, camera.up);
-        gl.uniformMatrix4fv(viewMatrixLocation , false, viewMatrix);
+        translateCamera();
+        camera.updateTarget();
+        mat4.lookAt(viewMatrix, camera.position, camera.target, camera.up);        
 
+        // (Classical) Compute Camera Matrix classical way then invert it (dosn't work yet)
+        // var cameraMatrix = mat4.create();
+        // mat4.rotateY(cameraMatrix, cameraMatrix, angle);
+        // mat4.translate(cameraMatrix, cameraMatrix, vec3.fromValues(0,0,2)); 
+        // mat4.invert(viewMatrix, cameraMatrix);
+        
+        gl.uniformMatrix4fv(viewMatrixLocation , false, viewMatrix);
         // ================================================
 
         mat4.identity(cube.modelMatrix);
@@ -198,10 +268,14 @@ document.addEventListener("keydown", function(event){
         aPress = true;
     if (event.key == "d")
         dPress = true;  
-    if (event.key == "r")
-        rPress = true;
-    if (event.key == "q")
-        qPress = true;    
+    if (event.key == "ArrowRight")
+        rightPress = true;
+    if (event.key == "ArrowLeft")
+        leftPress = true;    
+    if (event.key == "ArrowUp")
+        upPress = true;
+    if (event.key == "ArrowDown")
+        downPress = true;    
     if (event.key == "z")
         zPress = true;    
     if (event.key == "x")
@@ -216,10 +290,14 @@ document.addEventListener("keyup", function(event){
         aPress = false;
     if (event.key == "d")
         dPress = false;  
-    if (event.key == "r")
-        rPress = false;
-    if (event.key == "q")
-        qPress = false;    
+    if (event.key == "ArrowRight")
+        rightPress = false;
+    if (event.key == "ArrowLeft")
+        leftPress = false;    
+    if (event.key == "ArrowUp")
+        upPress = false;
+    if (event.key == "ArrowDown")
+        downPress = false;    
     if (event.key == "z")
         zPress = false;
     if (event.key == "x")
