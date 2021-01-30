@@ -8,14 +8,17 @@ in vec4 fcolor;
 
 uniform vec3 lightColor;
 uniform vec3 lightPosition;
+uniform vec3 cameraPosition;
 
 out vec4 out_fcolor;
 
 void main()
 {   
-    float ambientIntensity = 0.01;
+    // ============== Ambient ==============
+    float ambientIntensity = 0.1;
     vec4 ambientColor = vec4(ambientIntensity * lightColor, 1.0);
-
+    
+    // ============== Diffuse ==============
     // vector from vertex to light
     vec3 lightDirection = lightPosition - vec3(vertexWorldPosition);
     vec3 normalizedLightDirection = normalize(lightDirection);
@@ -26,12 +29,14 @@ void main()
     float diffuseIntensity = max( dot(normalizedNormal, normalizedLightDirection), 0.0);
     vec4 diffuseColor = vec4(diffuseIntensity * lightColor, 1.0);
 
-    // vec3 lightDirection = normalize(lightPosition - vec3(vertexWorldPosition));
-    // vec3 normalizedNormal = normalize(vertexNormal); 
-    // float diffuseIntensity = max (dot(normalizedNormal,lightDirection)  ,0.0);
-    // vec4 diffuseColor = vec4(diffuseIntensity*lightColor,1);
+    // ============== Specular ==============
+    vec3 cameraDirection = cameraPosition - vec3(vertexWorldPosition);
+    vec3 normalizedCameraDirection = normalize(cameraDirection); 
+    vec3 reflectedLight = reflect(-normalizedLightDirection, normalizedNormal);
+    float specularIntensity = max(dot(reflectedLight, normalizedCameraDirection), 0.0);
+    specularIntensity = pow(specularIntensity, 100.0);
+    vec4 specularColor = vec4(specularIntensity * lightColor, 1.0);
 
-
-    vec4 color = vec4(1,0,1,1);
-    out_fcolor = (diffuseColor + ambientColor) * color;
+    // ============== Total Color ==============
+    out_fcolor = (diffuseColor + ambientColor + specularColor) * fcolor;
 }

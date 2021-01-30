@@ -3,7 +3,7 @@
 import {readShaderFile, createShaderAndCompile} from "../utils/shader.js";
 import {createProgram} from "../utils/program.js"
 import {createBufferAndWrite ,bindBufferWithAttribute} from "../utils/buffer.js"
-import {vertices, textureCoordinates} from "./points_cube.js"
+import {vertices, textureCoordinates} from "../Cube/points_cube.js"
 
 // wait till the DOM is loaded
 document.addEventListener("DOMContentLoaded", start)
@@ -17,7 +17,6 @@ var gl = canvas.getContext("webgl2");
 var image, image2;
 var path1 = "images/webgl-logo-256.jpg";
 var path2 = "images/wood.jpg";
-var path3 = "images/z3.png";
 
 function start()
 {
@@ -32,7 +31,7 @@ function start()
 function start2()
 {
     image2 = new Image();
-    image2.src = path3;
+    image2.src = path2;
     image2.onload = function() {
         console.log("image2 loaded");
         main();

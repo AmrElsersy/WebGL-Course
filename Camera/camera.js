@@ -3,7 +3,7 @@
 import {readShaderFile, createShaderAndCompile} from "../utils/shader.js";
 import {createProgram} from "../utils/program.js"
 import {createBufferAndWrite ,bindBufferWithAttribute} from "../utils/buffer.js"
-import {vertices} from "./points_cube.js"
+import {vertices} from "../Cube/points_cube.js"
 
 // wait till the DOM is loaded
 document.addEventListener("DOMContentLoaded", start)

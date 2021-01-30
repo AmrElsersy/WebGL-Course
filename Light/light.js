@@ -3,7 +3,7 @@
 import {readShaderFile, createShaderAndCompile} from "../utils/shader.js";
 import {createProgram} from "../utils/program.js"
 import {createBufferAndWrite ,bindBufferWithAttribute} from "../utils/buffer.js"
-import {normals, vertices} from "./points_cube.js"
+import {normals, vertices} from "../Cube/points_cube.js"
 
 // wait till the DOM is loaded
 document.addEventListener("DOMContentLoaded", start)
@@ -192,8 +192,11 @@ function start()
 
     var lightPositionLocation = gl.getUniformLocation(object_cube.program, "lightPosition")
     var objectLightColorLocation = gl.getUniformLocation(object_cube.program, "lightColor");
+    var cameraPositonLocation = gl.getUniformLocation(object_cube.program, "cameraPosition");
+
     gl.uniform3fv(lightPositionLocation, light.position);
     gl.uniform3fv(objectLightColorLocation, light.color);
+    gl.uniform3fv(cameraPositonLocation, camera.position);
 
     gl.useProgram(light_cube.program);
     gl.bindVertexArray(light_cube.vao);
@@ -226,31 +229,32 @@ function start()
         camera.updateTarget();
         mat4.lookAt(viewMatrix, camera.position, camera.target, camera.up);        
         gl.uniformMatrix4fv(object_cube.viewMatrixLocation , false, viewMatrix);
+        // for Light Diffuse & Light Specular
         gl.uniform3fv(lightPositionLocation, light.position);
+        gl.uniform3fv(cameraPositonLocation, camera.position);
+    
         // Draw
         mat4.identity(object_cube.modelMatrix);
         mat4.translate(object_cube.modelMatrix, object_cube.modelMatrix, [2,0,-7])
         mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
         mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
+        mat4.scale(object_cube.modelMatrix, object_cube.modelMatrix, vec3.fromValues(2, 2, 2))
+
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(object_cube.modelMatrixLocation, false, object_cube.modelMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         mat4.identity(object_cube.modelMatrix);
         mat4.translate(object_cube.modelMatrix, object_cube.modelMatrix, [-2,0,-7])
-        // mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
-        // mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
+        mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
+        mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(object_cube.modelMatrixLocation, false, object_cube.modelMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
         
-
-        time += 0.1;
-        // light.position[1] = 6 * Math.sin(.1 * time);
-        // light.position[0] = -3 * Math.sin(.2 * time);
-        
-        light.position[1] = 6 * Math.sin(.1 * (time + light.position[1]));
+        time += 0.1;        
         light.position[0] = -6 * Math.sin(.1 * (time + light.position[0]));
+        light.position[1] = 6 * Math.sin(.1 * (time + light.position[1]));
        
         // =================== Visualization Light ===================
         {
