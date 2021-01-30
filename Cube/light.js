@@ -54,7 +54,11 @@ function create_object_cube(cube)
     gl.bindVertexArray(object_cube.vao);
     
     object_cube.verticesAttributeLocation = gl.getAttribLocation(object_cube.program, "position");
+    object_cube.noramlAttributreLocation = gl.getAttribLocation(object_cube.program, "normal");
+    object_cube.colorAttributeLocation = gl.getAttribLocation(object_cube.program, "color");
     bindBufferWithAttribute(gl, cube.verticesBuffer, object_cube.verticesAttributeLocation, 3, 0, 0);
+    bindBufferWithAttribute(gl, cube.normalsBuffer, object_cube.noramlAttributreLocation, 3, 0, 0);
+    bindBufferWithAttribute(gl, cube.colorsBuffer, object_cube.colorAttributeLocation, 4, 0, 0);    
 
     object_cube.modelMatrix = mat4.create();
     object_cube.modelMatrixLocation = gl.getUniformLocation(object_cube.program, "modelMatrix");
@@ -71,6 +75,23 @@ function create_abstract_cube()
     cube.normals = normals;    
     cube.verticesBuffer = createBufferAndWrite(gl, cube.vertices, gl.STATIC_DRAW);
     cube.normalsBuffer = createBufferAndWrite(gl, cube.normals, gl.STATIC_DRAW);
+    cube.colors = [];
+
+    var faceColors = [
+        [1.0, 0.0, 0.0, 1.0], // Front face
+        [0.0, 1.0, 0.0, 1.0], // Back face
+        [0.0, 0.0, 1.0, 1.0], // Top face
+        [1.0, 1.0, 0.0, 1.0], // Bottom face
+        [1.0, 0.0, 1.0, 1.0], // Right face
+        [0.0, 1.0, 1.0, 1.0] // Left face
+    ];
+    faceColors.forEach(function(color){
+        for (var i = 0; i < 6; i++)
+            cube.colors = cube.colors.concat(color);
+    })
+
+    cube.colorsBuffer =createBufferAndWrite(gl, cube.colors, gl.STATIC_DRAW);
+
     return cube;
 }
 
@@ -80,7 +101,6 @@ function start()
     gl.clearColor(0,1,0,1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.viewport(0,0, canvas.width, canvas.height);
-
 
     var cube = create_abstract_cube();
     var object_cube = create_object_cube(cube);
@@ -166,13 +186,14 @@ function start()
 
     // =================== Light ===================
     var light = {
-        ambient: vec3.fromValues(1,1,1),
-        diffuse: vec3.fromValues(1,1,1),
-        spectular: vec3.fromValues(1,1,1)
+        color: vec3.fromValues(1,1,1),
+        position: vec3.fromValues(4,4,-15)
     }
 
-    var objectCubeAmbientLightLocation = gl.getUniformLocation(object_cube.program, "ambientLight");
-    gl.uniform3fv(objectCubeAmbientLightLocation, light.ambient);
+    var lightPositionLocation = gl.getUniformLocation(object_cube.program, "lightPosition")
+    var objectLightColorLocation = gl.getUniformLocation(object_cube.program, "lightColor");
+    gl.uniform3fv(lightPositionLocation, light.position);
+    gl.uniform3fv(objectLightColorLocation, light.color);
 
     gl.useProgram(light_cube.program);
     gl.bindVertexArray(light_cube.vao);
@@ -181,9 +202,13 @@ function start()
     gl.uniformMatrix4fv(light_cube.projectionMatrixLocation, false, projectionMatrix);
     gl.uniformMatrix4fv(light_cube.viewMatrixLocation , false, viewMatrix);
 
-    var lightColorLocation = gl.getUniformLocation(light_cube.program, "color");
-    gl.uniform3fv(lightColorLocation, light.ambient);
+    var visualizedLightColorLocation = gl.getUniformLocation(light_cube.program, "color");
+    gl.uniform3fv(visualizedLightColorLocation, light.color);
     
+    var time = 0;
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     // ===============================================
     requestAnimationFrame(renderLoop);
     function renderLoop()
@@ -201,35 +226,42 @@ function start()
         camera.updateTarget();
         mat4.lookAt(viewMatrix, camera.position, camera.target, camera.up);        
         gl.uniformMatrix4fv(object_cube.viewMatrixLocation , false, viewMatrix);
+        gl.uniform3fv(lightPositionLocation, light.position);
         // Draw
         mat4.identity(object_cube.modelMatrix);
-        mat4.translate(object_cube.modelMatrix, object_cube.modelMatrix, [0,0,-7])
+        mat4.translate(object_cube.modelMatrix, object_cube.modelMatrix, [2,0,-7])
         mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
         mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(object_cube.modelMatrixLocation, false, object_cube.modelMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-
         mat4.identity(object_cube.modelMatrix);
         mat4.translate(object_cube.modelMatrix, object_cube.modelMatrix, [-2,0,-7])
-        mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
-        mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
+        // mat4.rotateX(object_cube.modelMatrix, object_cube.modelMatrix, 0.3);
+        // mat4.rotateY(object_cube.modelMatrix, object_cube.modelMatrix, angle);
         angle = (angle + 0.01) % 360;
         gl.uniformMatrix4fv(object_cube.modelMatrixLocation, false, object_cube.modelMatrix);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
+        
 
-        // =================== Light ===================
+        time += 0.1;
+        // light.position[1] = 6 * Math.sin(.1 * time);
+        // light.position[0] = -3 * Math.sin(.2 * time);
+        
+        light.position[1] = 6 * Math.sin(.1 * (time + light.position[1]));
+        light.position[0] = -6 * Math.sin(.1 * (time + light.position[0]));
+       
+        // =================== Visualization Light ===================
+        {
         gl.useProgram(light_cube.program);
         gl.bindVertexArray(light_cube.vao);
-
         mat4.identity(light_cube.modelMatrix);
-        mat4.translate(light_cube.modelMatrix, light_cube.modelMatrix, [4,4,-15])
+        mat4.translate(light_cube.modelMatrix, light_cube.modelMatrix, light.position);
         gl.uniformMatrix4fv(light_cube.modelMatrixLocation, false, light_cube.modelMatrix);
         gl.uniformMatrix4fv(light_cube.viewMatrixLocation , false, viewMatrix);
-
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-
+        }       
         requestAnimationFrame(renderLoop);
     }
 }
